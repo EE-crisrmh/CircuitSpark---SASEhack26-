@@ -1,7 +1,7 @@
 {
   "project_type": "buck_converter",
   "regulator_ic": "TPS54331",
-  "input_voltage": "5V",
+  "input_voltage": "12V",
   "output_voltage": "3.3V",
   "output_current": "3A",
 
@@ -10,13 +10,13 @@
       "step_id": 1,
       "title": "Understand what a buck converter does",
       "objective": "Understand that a buck converter steps a higher DC voltage down to a lower DC voltage efficiently.",
-      "task": "In your own words: why can't you just use a resistor to drop 5V to 3.3V for a circuit that draws real current?",
+      "task": "In your own words: why can't you just use a resistor to drop 12V to 3.3V for a circuit that draws real current?",
       "expected_answer": {
         "type": "conceptual",
         "key_ideas": ["resistor wastes power as heat", "efficiency", "current-dependent voltage drop is unstable"]
       },
       "hints": {
-        "1": "Think about what happens to the extra 1.7V if you just used a resistor, where does that energy go?",
+        "1": "Think about what happens to the extra 8.7V if you just used a resistor, where does that energy go?",
         "2": "Power dissipated as heat scales with current. What happens as the load draws more current?",
         "3": "Look at Section 7.3, Feature Description, for how the regulator switches instead of dropping voltage linearly.",
         "4": "A resistor wastes the voltage difference as heat, and that waste gets worse as current increases. A buck converter switches the input on and off rapidly and stores energy in an inductor, so almost no energy is wasted — that's why it's efficient at any load current."
@@ -26,37 +26,37 @@
 
     {
       "step_id": 2,
-      "title": "Choose the regulator IC",
+      "title": "Regulator IC: TPS54331",
       "objective": "Understand why a specific buck regulator IC is chosen for this voltage/current range.",
-      "task": "We're using the TPS54331. Looking at its datasheet, what's the maximum output current it can supply?",
+      "task": "We're using the TPS54331 with a 12V input. Looking at its Electrical Characteristics table, what's the typical current limit threshold?",
       "expected_answer": {
         "type": "factual",
-        "value": "3A",
-        "acceptable": ["3A", "3 amps", "3 amperes"]
+        "value": "5.8A",
+        "acceptable": ["5.8A", "5.8 A", "5.8 amps", "5.8 amperes"]
       },
       "hints": {
-        "1": "Check the very first page, datasheets always list the headline specs up front.",
-        "2": "Look for a spec labeled 'Output Current' near the top of the datasheet.",
-        "3": "Check Section 6, Specifications, or the features list on page 1.",
-        "4": "The TPS54331 supports up to 3A of continuous output current, well above what a typical 3.3V logic circuit needs, which gives design headroom."
+        "1": "Check the Electrical Characteristics table — current limit is listed with min/typ/max values.",
+        "2": "Look for a row labeled 'Current limit threshold' near the switching specs.",
+        "3": "Check Section 6.5, Electrical Characteristics, for the typical current limit value at VIN = 12V.",
+        "4": "The TPS54331 has a typical current limit threshold of 5.8A at VIN = 12V, well above what our 3.3V/3A output needs, which gives design headroom before the regulator's protection kicks in."
       },
-      "datasheet_reference": { "section": "1", "title": "Features / General Description" }
+      "datasheet_reference": { "section": "6.5", "title": "Electrical Characteristics" }
     },
 
     {
       "step_id": 3,
       "title": "Place the regulator IC",
       "objective": "Place the TPS54331 on the schematic and identify its key pins.",
-      "task": "Place the TPS54331 IC on the canvas. Which pin should VIN (5V) connect to?",
+      "task": "Place the TPS54331 IC on the canvas. Which pin should VIN (12V) connect to?",
       "expected_answer": {
         "components": ["TPS54331"],
-        "connections": [["VIN_5V", "TPS54331.VIN"]]
+        "connections": [["VIN_12V", "TPS54331.VIN"]]
       },
       "hints": {
         "1": "The pin name usually tells you exactly what it's for.",
         "2": "Look for a pin literally labeled VIN on the package diagram.",
         "3": "Check Section 9.1, Pin Configuration, for the pin numbering and names.",
-        "4": "Pin 1 (VIN) is where your 5V input rail connects. This pin feeds the internal power switch that does the actual buck conversion."
+        "4": "Pin 2 VIN is where your 12v input rail connects - Pin 1 is BOOT0, used for internal gate drive bootstrap capacitor, not the input rail, VIN feeds the internal power switch that does the actual buck conversion." 
       },
       "datasheet_reference": { "section": "9.1", "title": "Pin Configuration and Functions" }
     },
@@ -68,7 +68,7 @@
       "task": "Place a capacitor between VIN and GND.",
       "expected_answer": {
         "components": ["capacitor"],
-        "connections": [["VIN_5V", "C1"], ["C1", "GND"]]
+        "connections": [["VIN_12V", "C1"], ["C1", "GND"]]
       },
       "hints": {
         "1": "Think about what happens when the regulator suddenly draws a big pulse of current from the input, all at once.",
