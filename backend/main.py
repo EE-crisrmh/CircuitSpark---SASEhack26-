@@ -117,4 +117,81 @@ def evaluate_answer(step, student_answer):
                 return evaluate_component_step(step, student_answer)
         else:
                 return evaluate_conceptual_step(step, student_answer)
-        
+
+@app.post("/submit-answer", response_model=AnswerResponse)
+def submit_answer(request: AnswerRequest):
+    session = sessions.get(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    current_index = session["current_step_index"]
+    current_step = STEPS[current_index]
+
+    is_correct = evaluate_answer(current_step, request.answer)
+
+    if is_correct:
+        # Correct, reset hint level and move to the next step.
+        session["current_step_index"] += 1
+        session["hint_level"] = 0
+        session["attempts"] = 0
+
+        if session["current_step_index"] >= len(STEPS):
+            return AnswerResponse(
+                correct=True,
+                message="Correct! You've completed the buck converter circuit!",
+                hint_level=0,
+                step_number=len(STEPS),
+                total_steps=len(STEPS),
+                completed=True,
+            )
+
+        next_step = STEPS[session["current_step_index"]]
+        return AnswerResponse(
+            correct=True,
+            message=f"Correct! Moving to step {session['current_step_index'] + 1}: {next_step['title']}",
+            hint_level=0,
+            step_number=session["current_step_index"] + 1,
+            total_steps=len(STEPS),
+            completed=False,
+        )
+
+    else:
+        # Incorrect, escalate the hint level. 
+        session["hint_level"] += 1
+        session["attempts"] += 1
+
+        if session["hint_level"] > 4:
+            # User has exhaused all hints, auto-advance so they're not stuck in a loop.
+            session["current_step_index"] += 1
+            session["hint_level"] = 0
+            session["attempts"] = 0
+
+            if session["current_step_index"] >= len(STEPS):
+                return AnswerResponse(
+                    correct=True,
+                    message="Let's move on — you've completed the circuit!",
+                    hint_level=0,
+                    step_number=len(STEPS),
+                    total_steps=len(STEPS),
+                    completed=True,
+                )
+
+            next_step = STEPS[session["current_step_index"]]
+            return AnswerResponse(
+                correct=True,
+                message=f"Let's move on to step {session['current_step_index'] + 1}: {next_step['title']}",
+                hint_level=0,
+                step_number=session["current_step_index"] + 1,
+                total_steps=len(STEPS),
+                completed=False,
+            )
+
+        hint_text = current_step["hints"][str(session["hint_level"])]
+        return AnswerResponse(
+            correct=False,
+            message=hint_text,
+            hint_level=session["hint_level"],
+            step_number=current_index + 1,
+            total_steps=len(STEPS),
+            completed=False,
+        )
