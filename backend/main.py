@@ -45,4 +45,23 @@ class AnswerResponse(BaseModel):
         step_number: int 
         total_steps: int 
         completed: bool 
- 
+
+@app.post("/start", response_model=StartResponse) 
+def start_session():
+        session_id = str(uuid.uuid4())
+
+        sessions[session_id]= {
+            "current_step_index" : 0,
+            "hint_level": 0,
+            "attempts": 0,
+        }
+
+        first_step = STEPS[0]
+
+        return StartResponse(
+            session_id=session_id,
+            step_number=1,
+            total_steps=len(STEPS),
+            title=first_step["title"],
+            task=first_step["task"]
+        )
