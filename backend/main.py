@@ -108,8 +108,7 @@ def evaluate_conceptual_step(step, student_answer):
 
         response = model.generate_content(prompt)
         result = response.text.strip().upper()
-
-        return "CORRECT" in result 
+        return result == "CORRECT"
 
 def evaluate_answer(step, student_answer): 
         """Routes to the right evaluator depending on the step type."""
