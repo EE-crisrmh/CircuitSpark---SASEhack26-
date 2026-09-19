@@ -17,3 +17,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+with open (buck_converter_steps.json") as f:
+           CIRCUIT_DATA = json.load(f)
+
+STEPS = CIRCUIT_DATA["steps"]
