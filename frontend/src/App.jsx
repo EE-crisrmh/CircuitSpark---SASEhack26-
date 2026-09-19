@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SchematicView from "./SchematicView";
 
 const API_BASE = "http://localhost:8000";
 
@@ -72,6 +73,7 @@ export default function App() {
 
   return (
     <div style={{ maxWidth: 600, margin: "60px auto", fontFamily: "sans-serif" }}>
+      <SchematicView currentStep={stepNumber} completed={completed} />
       <p style={{ color: "#666" }}>
         Step {stepNumber} of {totalSteps}
       </p>
