@@ -1,0 +1,14 @@
+# Ignore the exact .env file
+.env
+
+# Ignore any variations (e.g., .env.local, .env.development, .env.production)
+.env.*
+
+# Ignore environment files anywhere in the directory tree
+**/.env
+**/.env.*
+
+venv/
+.venv/
+
+backend/.env
