@@ -5,3 +5,4 @@ app = FastAPI()
 @app.get("/")
 def health_check():
     return {"status": "CircuitSpark backend running"}
+print("hello, CircuitSpark!")
