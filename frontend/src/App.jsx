@@ -14,6 +14,7 @@ export default function App() {
   const [hintLevel, setHintLevel] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [datasheetRef, setDatasheetRef] = useState(null);
 
   async function startSession() {
     setLoading(true);
@@ -24,6 +25,7 @@ export default function App() {
     setTotalSteps(data.total_steps);
     setTitle(data.title);
     setTask(data.task);
+    setDatasheetRef(data.datasheet_reference || null);
     setFeedback("");
     setHintLevel(0);
     setCompleted(false);
@@ -45,6 +47,7 @@ export default function App() {
     setHintLevel(data.hint_level);
     setStepNumber(data.step_number);
     setCompleted(data.completed);
+    if (data.datasheet_reference) setDatasheetRef(data.datasheet_reference);
     if (data.correct) setAnswer("");
     setLoading(false);
   }
@@ -79,6 +82,19 @@ export default function App() {
       </p>
       <h2>{title}</h2>
       <p>{task}</p>
+
+      {datasheetRef && (
+        <p style={{ fontSize: 13 }}>
+          📄{" "}
+          
+            href="https://www.ti.com/lit/ds/symlink/tps54331.pdf"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Datasheet — Section {datasheetRef.section}: {datasheetRef.title}
+          </a>
+        </p>
+      )}
 
       <form onSubmit={submitAnswer}>
         <textarea
