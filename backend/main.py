@@ -69,7 +69,7 @@ def start_session():
         )
 
 def evaluate_component_step(step, student_answer): 
-    ""For steps 3-7: keyword match, no API call needed."" 
+    """For steps 3-7: keyword match, no API call needed.""" 
     expected_components = [c.lower() for c in step["expected_answer"]["components"]]
     answer_lower = student_answer.lower() 
 
