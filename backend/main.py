@@ -90,7 +90,7 @@ def evaluate_conceptual_step(step, student_answer):
         import google.generativeai as genai 
 
         genai.configure(api_key = os.getenv("GEMINI_API_KEY"))
-        model = genai.GenerativeModel("gemini-2.0-flash-lite")
+        model = genai.GenerativeModel("gemini-3.5-flash-lite")
 
         expected = step["expected_answer"]
 
