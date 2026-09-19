@@ -1,5 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from dotenv import load_dotenv
+import os
+import json
+import uuid
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -10,7 +17,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/")
-def health_check():
-    return {"status": "CircuitSpark backend running"}
