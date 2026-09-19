@@ -63,9 +63,9 @@
 
     {
       "step_id": 4,
-      "title": "Add the input capacitor",
+      "title": "Adding the input capacitor",
       "objective": "Understand why an input capacitor is needed and place it correctly.",
-      "task": "Place a capacitor between VIN and GND.",
+      "task": "In your own words, what are we adding here and why does it need to be there?",
       "expected_answer": {
         "components": ["capacitor"],
         "connections": [["VIN_12V", "C1"], ["C1", "GND"]]
