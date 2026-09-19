@@ -1,0 +1,167 @@
+{
+  "project_type": "buck_converter",
+  "regulator_ic": "TPS54331",
+  "input_voltage": "5V",
+  "output_voltage": "3.3V",
+  "output_current": "3A",
+
+  "steps": [
+    {
+      "step_id": 1,
+      "title": "Understand what a buck converter does",
+      "objective": "Understand that a buck converter steps a higher DC voltage down to a lower DC voltage efficiently.",
+      "task": "In your own words: why can't you just use a resistor to drop 5V to 3.3V for a circuit that draws real current?",
+      "expected_answer": {
+        "type": "conceptual",
+        "key_ideas": ["resistor wastes power as heat", "efficiency", "current-dependent voltage drop is unstable"]
+      },
+      "hints": {
+        "1": "Think about what happens to the extra 1.7V if you just used a resistor, where does that energy go?",
+        "2": "Power dissipated as heat scales with current. What happens as the load draws more current?",
+        "3": "Look at Section 7.3, Feature Description, for how the regulator switches instead of dropping voltage linearly.",
+        "4": "A resistor wastes the voltage difference as heat, and that waste gets worse as current increases. A buck converter switches the input on and off rapidly and stores energy in an inductor, so almost no energy is wasted — that's why it's efficient at any load current."
+      },
+      "datasheet_reference": { "section": "7.3", "title": "Feature Description" }
+    },
+
+    {
+      "step_id": 2,
+      "title": "Choose the regulator IC",
+      "objective": "Understand why a specific buck regulator IC is chosen for this voltage/current range.",
+      "task": "We're using the TPS54331. Looking at its datasheet, what's the maximum output current it can supply?",
+      "expected_answer": {
+        "type": "factual",
+        "value": "3A",
+        "acceptable": ["3A", "3 amps", "3 amperes"]
+      },
+      "hints": {
+        "1": "Check the very first page, datasheets always list the headline specs up front.",
+        "2": "Look for a spec labeled 'Output Current' near the top of the datasheet.",
+        "3": "Check Section 6, Specifications, or the features list on page 1.",
+        "4": "The TPS54331 supports up to 3A of continuous output current, well above what a typical 3.3V logic circuit needs, which gives design headroom."
+      },
+      "datasheet_reference": { "section": "1", "title": "Features / General Description" }
+    },
+
+    {
+      "step_id": 3,
+      "title": "Place the regulator IC",
+      "objective": "Place the TPS54331 on the schematic and identify its key pins.",
+      "task": "Place the TPS54331 IC on the canvas. Which pin should VIN (5V) connect to?",
+      "expected_answer": {
+        "components": ["TPS54331"],
+        "connections": [["VIN_5V", "TPS54331.VIN"]]
+      },
+      "hints": {
+        "1": "The pin name usually tells you exactly what it's for.",
+        "2": "Look for a pin literally labeled VIN on the package diagram.",
+        "3": "Check Section 9.1, Pin Configuration, for the pin numbering and names.",
+        "4": "Pin 1 (VIN) is where your 5V input rail connects. This pin feeds the internal power switch that does the actual buck conversion."
+      },
+      "datasheet_reference": { "section": "9.1", "title": "Pin Configuration and Functions" }
+    },
+
+    {
+      "step_id": 4,
+      "title": "Add the input capacitor",
+      "objective": "Understand why an input capacitor is needed and place it correctly.",
+      "task": "Place a capacitor between VIN and GND.",
+      "expected_answer": {
+        "components": ["capacitor"],
+        "connections": [["VIN_5V", "C1"], ["C1", "GND"]]
+      },
+      "hints": {
+        "1": "Think about what happens when the regulator suddenly draws a big pulse of current from the input, all at once.",
+        "2": "Look at what's connected directly between VIN and GND in the typical application circuit.",
+        "3": "Check Section 8.2, Typical Application, for the recommended input capacitance value.",
+        "4": "The input capacitor (typically 10µF ceramic) acts as a local energy reservoir, supplying the sudden current pulses the switching regulator demands so the input rail voltage doesn't sag or ring."
+      },
+      "datasheet_reference": { "section": "8.2", "title": "Typical Application" }
+    },
+
+    {
+      "step_id": 5,
+      "title": "Add the inductor",
+      "objective": "Understand the inductor's role in energy storage and place it between SW and the output.",
+      "task": "Place an inductor between the SW pin and the output node (VOUT).",
+      "expected_answer": {
+        "components": ["inductor"],
+        "connections": [["TPS54331.SW", "L1"], ["L1", "VOUT_3V3"]]
+      },
+      "hints": {
+        "1": "The regulator doesn't just drop voltage, it switches a pin on and off rapidly. What component stores energy between switch pulses?",
+        "2": "Look at what connects the SW (switch) pin to the output side of the circuit.",
+        "3": "Check Section 8.2.2 for the inductor selection guidance and recommended value.",
+        "4": "The inductor stores energy while SW is on and releases it smoothly while SW is off, turning the choppy switched pulses into a steady output current — this is the core of how a buck converter works."
+      },
+      "datasheet_reference": { "section": "8.2.2", "title": "Inductor Selection" }
+    },
+
+    {
+      "step_id": 6,
+      "title": "Add the output capacitor",
+      "objective": "Understand why an output capacitor smooths the converted voltage.",
+      "task": "Place a capacitor between VOUT and GND.",
+      "expected_answer": {
+        "components": ["capacitor"],
+        "connections": [["VOUT_3V3", "C2"], ["C2", "GND"]]
+      },
+      "hints": {
+        "1": "The inductor's current isn't perfectly smooth, it ripples. What smooths a ripply voltage into something stable?",
+        "2": "Look at what's connected directly between VOUT and GND in the typical application circuit.",
+        "3": "Check Section 8.2.3 for output capacitance selection and ripple voltage targets.",
+        "4": "The output capacitor filters the remaining current ripple from the inductor, holding VOUT steady at 3.3V instead of a wavy approximation of it."
+      },
+      "datasheet_reference": { "section": "8.2.3", "title": "Output Capacitor Selection" }
+    },
+
+    {
+      "step_id": 7,
+      "title": "Build the feedback network",
+      "objective": "Understand how the regulator senses output voltage to regulate it, via a resistor divider to FB.",
+      "task": "Place two resistors as a voltage divider from VOUT to GND, with the midpoint connected to the FB pin.",
+      "expected_answer": {
+        "components": ["resistor", "resistor"],
+        "connections": [
+          ["VOUT_3V3", "R1"],
+          ["R1", "FB_NODE"],
+          ["FB_NODE", "R2"],
+          ["R2", "GND"],
+          ["FB_NODE", "TPS54331.FB"]
+        ]
+      },
+      "hints": {
+        "1": "The regulator needs to know what the output voltage actually is, in order to correct it. How would you measure a voltage using only resistors?",
+        "2": "Look at the FB pin, what two components typically connect to it from VOUT and GND?",
+        "3": "Check Section 8.2.4 or the Feedback Resistor Selection section for the divider ratio formula.",
+        "4": "R1 and R2 form a voltage divider that scales VOUT down to the IC's internal reference voltage (typically 0.8V). The IC compares FB against that reference and adjusts switching to hold VOUT at exactly 3.3V."
+      },
+      "datasheet_reference": { "section": "8.2.4", "title": "Output Voltage / Feedback Resistor Selection" }
+    },
+
+    {
+      "step_id": 8,
+      "title": "Review the completed schematic",
+      "objective": "Confirm the full signal path makes sense end-to-end.",
+      "task": "Trace the full path: what happens to current from VIN to VOUT, in order?",
+      "expected_answer": {
+        "type": "conceptual",
+        "key_ideas": [
+          "VIN feeds the internal switch",
+          "SW pin switches rapidly",
+          "inductor stores/releases energy",
+          "output capacitor smooths ripple",
+          "feedback resistors report VOUT back to FB",
+          "IC adjusts switching duty cycle to hold 3.3V"
+        ]
+      },
+      "hints": {
+        "1": "Walk the schematic left to right: VIN → IC → SW → ... → VOUT. What's each stop doing?",
+        "2": "Don't forget the feedback loop, it's not just left-to-right, there's a path going backward too.",
+        "3": "Re-read Section 8.1, Overview, which usually summarizes the whole control loop in a few sentences.",
+        "4": "5V enters at VIN. The IC rapidly switches the SW pin on/off. The inductor and output capacitor turn those pulses into a smooth 3.3V. The feedback resistors sample that 3.3V and report it to FB, so the IC can keep adjusting its switching to hold the output steady even as load changes."
+      },
+      "datasheet_reference": { "section": "8.1", "title": "Overview" }
+    }
+  ]
+}
