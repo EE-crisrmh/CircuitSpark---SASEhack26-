@@ -52,76 +52,153 @@ export default function App() {
     setLoading(false);
   }
 
+  const pageStyle = {
+    position: "fixed",
+    inset: 0,
+    fontFamily: "sans-serif",
+    background: "#0a1628",
+    color: "#e2e8f0",
+  };
+
   if (!sessionId) {
     return (
-      <div style={{ maxWidth: 600, margin: "80px auto", fontFamily: "sans-serif" }}>
-        <h1>CircuitSpark</h1>
-        <p>Learn to design a buck converter, one step at a time.</p>
-        <button onClick={startSession} disabled={loading}>
-          {loading ? "Starting..." : "Start"}
-        </button>
+      <div style={{ ...pageStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ maxWidth: 500, textAlign: "center" }}>
+          <h1>CircuitSpark</h1>
+          <p style={{ color: "#94a3b8" }}>Learn to design a buck converter, one step at a time.</p>
+          <button onClick={startSession} disabled={loading} style={btnStyle}>
+            {loading ? "Starting..." : "Start"}
+          </button>
+        </div>
       </div>
     );
   }
 
   if (completed) {
     return (
-      <div style={{ maxWidth: 600, margin: "80px auto", fontFamily: "sans-serif" }}>
-        <h1>Circuit complete!</h1>
-        <p>{feedback}</p>
-        <button onClick={startSession}>Start over</button>
+      <div style={{ ...pageStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ maxWidth: 500, textAlign: "center" }}>
+          <h1>Circuit complete!</h1>
+          <p>{feedback}</p>
+          <button onClick={startSession} style={btnStyle}>Start over</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "60px auto", fontFamily: "sans-serif" }}>
-      <SchematicView currentStep={stepNumber} completed={completed} />
-      <p style={{ color: "#666" }}>
-        Step {stepNumber} of {totalSteps}
-      </p>
-      <h2>{title}</h2>
-      <p>{task}</p>
+    <div style={{ ...pageStyle, display: "flex" }}>
+      {/* Canvas: 80% */}
+      <div style={{ flex: "0 0 80%", height: "100%" }}>
+        <SchematicView currentStep={stepNumber} completed={completed} />
+      </div>
 
-      {datasheetRef && (
-        <p style={{ fontSize: 13 }}>
-          Datasheet:{" "}
-          <a
-            href="https://www.ti.com/lit/ds/symlink/tps54331.pdf"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Section {datasheetRef.section}: {datasheetRef.title}
-          </a>
-        </p>
-      )}
-
-      <form onSubmit={submitAnswer}>
-        <textarea
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          rows={4}
-          style={{ width: "100%", padding: 8 }}
-          placeholder="Type your answer..."
-        />
-        <br />
-        <button type="submit" disabled={loading} style={{ marginTop: 8 }}>
-          {loading ? "Checking..." : "Submit"}
-        </button>
-      </form>
-
-      {feedback && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 12,
-            background: hintLevel > 0 ? "#fff4e5" : "#e6ffed",
-            borderRadius: 6,
-          }}
-        >
-          {feedback}
+      {/* Sidebar: 20% */}
+      <div
+        style={{
+          flex: "0 0 20%",
+          height: "100%",
+          overflowY: "auto",
+          borderLeft: "1px solid #1e293b",
+          padding: "24px 20px",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Compact step tracker */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
+          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((n) => (
+            <div
+              key={n}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 11,
+                fontWeight: "bold",
+                border: `2px solid ${n < stepNumber ? "#4ade80" : n === stepNumber ? "#60a5fa" : "#334155"}`,
+                background: n < stepNumber ? "#4ade80" : "transparent",
+                color: n < stepNumber ? "#0a1628" : n === stepNumber ? "#60a5fa" : "#64748b",
+              }}
+            >
+              {n < stepNumber ? "✓" : n}
+            </div>
+          ))}
         </div>
-      )}
+
+        <p style={{ color: "#64748b", margin: 0, fontSize: 13 }}>
+          Step {stepNumber} of {totalSteps}
+        </p>
+        <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20 }}>{title}</h2>
+        <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.5 }}>{task}</p>
+
+        {datasheetRef && (
+          <p style={{ fontSize: 12, marginTop: 4 }}>
+            <a
+              href="https://www.ti.com/lit/ds/symlink/tps54331.pdf"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "#60a5fa" }}
+            >
+              Datasheet: Section {datasheetRef.section} — {datasheetRef.title}
+            </a>
+          </p>
+        )}
+
+        <form onSubmit={submitAnswer} style={{ marginTop: "auto" }}>
+          <textarea
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            rows={5}
+            style={{
+              width: "100%",
+              padding: 10,
+              boxSizing: "border-box",
+              background: "#0f1420",
+              color: "#e2e8f0",
+              border: "1px solid #334155",
+              borderRadius: 6,
+              resize: "vertical",
+              fontFamily: "inherit",
+            }}
+            placeholder="Type your answer..."
+          />
+          <button type="submit" disabled={loading} style={{ ...btnStyle, width: "100%", marginTop: 10 }}>
+            {loading ? "Checking..." : "Submit"}
+          </button>
+        </form>
+
+        {feedback && (
+          <div
+            style={{
+              marginTop: 16,
+              padding: 12,
+              fontSize: 13,
+              lineHeight: 1.5,
+              background: hintLevel > 0 ? "#3f2d12" : "#123f22",
+              color: hintLevel > 0 ? "#fcd34d" : "#86efac",
+              borderRadius: 6,
+            }}
+          >
+            {feedback}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
+const btnStyle = {
+  padding: "10px 18px",
+  background: "#60a5fa",
+  color: "#0a1628",
+  border: "none",
+  borderRadius: 6,
+  fontWeight: "bold",
+  cursor: "pointer",
+  fontSize: 14,
+};

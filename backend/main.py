@@ -111,12 +111,19 @@ def evaluate_conceptual_step(step, student_answer):
     else:
         criteria = f"Acceptable values: {expected.get('acceptable', [expected.get('value')])}"
 
-    prompt = f"""You are grading a student's answer for a PCB design tutoring app.
-    {criteria}
+        prompt = f"""You are grading a student's short answer for a beginner PCB design tutoring app.
+        Students type quick, casual answers while learning — not polished essays.
 
-    Student's answer: "{student_answer}"
+        {criteria}
 
-    Reply with ONLY the word CORRECT or INCORRECT, and nothing else."""
+        Mark CORRECT if the answer shows a reasonable grasp of the core idea(s) above,
+        even if brief, informally worded, or missing minor details.
+        Mark INCORRECT only if the answer is off-topic, factually wrong, just repeats
+        the question back, or shows no real understanding.
+
+        Student's answer: "{student_answer}"
+
+        Reply with ONLY the word CORRECT or INCORRECT, and nothing else."""
 
     response = model.generate_content(prompt)
     result = response.text.strip().upper()
