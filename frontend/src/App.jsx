@@ -67,7 +67,7 @@ export default function App() {
   if (completed) {
     return (
       <div style={{ maxWidth: 600, margin: "80px auto", fontFamily: "sans-serif" }}>
-        <h1>🎉 Circuit complete!</h1>
+        <h1>Circuit complete!</h1>
         <p>{feedback}</p>
         <button onClick={startSession}>Start over</button>
       </div>
@@ -85,13 +85,13 @@ export default function App() {
 
       {datasheetRef && (
         <p style={{ fontSize: 13 }}>
-          📄{" "}
-          
+          Datasheet:{" "}
+          <a
             href="https://www.ti.com/lit/ds/symlink/tps54331.pdf"
             target="_blank"
             rel="noreferrer"
           >
-            Datasheet — Section {datasheetRef.section}: {datasheetRef.title}
+            Section {datasheetRef.section}: {datasheetRef.title}
           </a>
         </p>
       )}
