@@ -54,6 +54,8 @@ class AnswerResponse(BaseModel):
     step_number: int
     total_steps: int
     completed: bool
+    title: str | None = None
+    task: str | None = None
     datasheet_reference: DatasheetReference | None = None
 
 
@@ -111,19 +113,19 @@ def evaluate_conceptual_step(step, student_answer):
     else:
         criteria = f"Acceptable values: {expected.get('acceptable', [expected.get('value')])}"
 
-        prompt = f"""You are grading a student's short answer for a beginner PCB design tutoring app.
-        Students type quick, casual answers while learning — not polished essays.
+    prompt = f"""You are grading a student's short answer for a beginner PCB design tutoring app.
+    Students type quick, casual answers while learning — not polished essays.
 
-        {criteria}
+    {criteria}
 
-        Mark CORRECT if the answer shows a reasonable grasp of the core idea(s) above,
-        even if brief, informally worded, or missing minor details.
-        Mark INCORRECT only if the answer is off-topic, factually wrong, just repeats
-        the question back, or shows no real understanding.
+    Mark CORRECT if the answer shows a reasonable grasp of the core idea(s) above,
+    even if brief, informally worded, or missing minor details.
+    Mark INCORRECT only if the answer is off-topic, factually wrong, just repeats
+    the question back, or shows no real understanding.
 
-        Student's answer: "{student_answer}"
+    Student's answer: "{student_answer}"
 
-        Reply with ONLY the word CORRECT or INCORRECT, and nothing else."""
+    Reply with ONLY the word CORRECT or INCORRECT, and nothing else."""
 
     response = model.generate_content(prompt)
     result = response.text.strip().upper()
@@ -173,6 +175,8 @@ def submit_answer(request: AnswerRequest):
             step_number=session["current_step_index"] + 1,
             total_steps=len(STEPS),
             completed=False,
+            title=next_step["title"],
+            task=next_step["task"],
             datasheet_reference=next_step["datasheet_reference"],
         )
 
@@ -205,6 +209,8 @@ def submit_answer(request: AnswerRequest):
                 step_number=session["current_step_index"] + 1,
                 total_steps=len(STEPS),
                 completed=False,
+                title=next_step["title"],
+                task=next_step["task"],
                 datasheet_reference=next_step["datasheet_reference"],
             )
 
@@ -216,5 +222,8 @@ def submit_answer(request: AnswerRequest):
             step_number=current_index + 1,
             total_steps=len(STEPS),
             completed=False,
+            title=current_step["title"],
+            task=current_step["task"],
             datasheet_reference=current_step["datasheet_reference"],
         )
+    

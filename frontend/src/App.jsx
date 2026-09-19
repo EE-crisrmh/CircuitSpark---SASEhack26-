@@ -33,34 +33,49 @@ export default function App() {
     setLoading(false);
   }
 
-  async function submitAnswer(e) {
+   async function submitAnswer(e) {
     e.preventDefault();
     if (!answer.trim() || loading) return;
     setLoading(true);
-    const res = await fetch(`${API_BASE}/submit-answer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId, answer }),
-    });
-    const data = await res.json();
-    setFeedback(data.message);
-    setHintLevel(data.hint_level);
-    setStepNumber(data.step_number);
-    setCompleted(data.completed);
-    if (data.datasheet_reference) setDatasheetRef(data.datasheet_reference);
-    if (data.correct) setAnswer("");
-    setLoading(false);
+    try {
+      const res = await fetch(`${API_BASE}/submit-answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, answer }),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("submit-answer failed:", res.status, errText);
+        setFeedback(`Error ${res.status}: check backend terminal for details.`);
+        return;
+      }
+      const data = await res.json();
+      setFeedback(data.message);
+      setHintLevel(data.hint_level);
+      setStepNumber(data.step_number);
+      if (data.title) setTitle(data.title);
+      if (data.task) setTask(data.task);
+      setCompleted(data.completed);
+      if (data.datasheet_reference) setDatasheetRef(data.datasheet_reference);
+      if (data.correct) setAnswer("");
+    } catch (err) {
+      console.error("submit-answer network error:", err);
+      setFeedback("Network error — is the backend running?");
+    } finally {
+      setLoading(false);    
+    }
   }
 
-  const pageStyle = {
-    position: "fixed",
-    inset: 0,
-    fontFamily: "sans-serif",
-    background: "#0a1628",
-    color: "#e2e8f0",
-  };
+    const pageStyle = { 
+      position: "fixed", 
+      inset:0,
+      fontFamily: "sans-serif",
+      background:"#0a1628",
+      color:"#e2e8f0",
 
-  if (!sessionId) {
+    }; 
+
+      if (!sessionId) {
     return (
       <div style={{ ...pageStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ maxWidth: 500, textAlign: "center" }}>
