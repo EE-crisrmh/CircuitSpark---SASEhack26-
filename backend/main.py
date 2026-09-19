@@ -83,6 +83,31 @@ def evaluate_component_step(step, student_answer):
             accepted_terms = abbreviations.get(comp, [comp]) 
             if not any(term in answer_lower for term in accepted_terms):
                     return False 
+    return True
 
-        return True
+def evaluate_conceptual_step(step, student_answer):
+        """For steps 1, 2, and 8: uses Gemini to judge free-text answers."""
+        import google.generativeai as genai 
+
+        genai.configure(api_key = os.getenv("GEMINI_API_KEY"))
+        model = genai.GenerativeModel("gemeni-2.0-flash-lite")
+
+        expected = step["expected_answer"]
+
+        if expected.get("type") == "conceptual": 
+                criteria = f"Key ideas the answer should touch on {expected['key_ideas']}"
+        else:
+                criteria = f"Acceptable values: {expected.get('acceptable', [expected.get('value')])}"
+
+        prompt = f"""You are grading a student's answer for a PCB design tutoring app.
+        {criteria}
+
+        Student's answer: "{student_answer}"
+
+        Reply with ONLY the word CORRECT or INCORRECT, and nothing else."""
+
+        response = model.generate_content(prompt)
+        result = response.text.strip().upper()
+
+        return "CORRECT" in result 
 
