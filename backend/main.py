@@ -1,3 +1,5 @@
+from ast import For
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -65,3 +67,22 @@ def start_session():
             title=first_step["title"],
             task=first_step["task"]
         )
+
+def evaluate_component_step(step, student_answer): 
+    ""For steps 3-7: keyword match, no API call needed."" 
+    expected_components = [c.lower() for c in step["expected_answer"]["components"]]
+    answer_lower = student_answer.lower() 
+
+    abbreviations = {
+            "capacitor": ["capacitor", "cap", "caps"], 
+            "inductor": ["inductor", "coil", "ind"], 
+            "resistor": ["resistor", "res", "resist"],
+    }
+
+    for comp in expected_components: 
+            accepted_terms = abbreviations.get(comp, [comp]) 
+            if not any(term in answer_lower for term in accepted_terms):
+                    return False 
+
+        return True
+
