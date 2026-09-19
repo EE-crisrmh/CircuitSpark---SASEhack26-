@@ -57,6 +57,7 @@ class AnswerResponse(BaseModel):
     title: str | None = None
     task: str | None = None
     datasheet_reference: DatasheetReference | None = None
+    stage: str | None = None # "component" | "reasoning" | None 
 
 
 @app.post("/start", response_model=StartResponse)
@@ -64,10 +65,12 @@ def start_session():
     session_id = str(uuid.uuid4())
 
     sessions[session_id] = {
-        "current_step_index": 0,
-        "hint_level": 0,
-        "attempts": 0,
-    }
+    "current_step_index": 0,
+    "hint_level": 0,
+    "attempts": 0,
+    "stage": "component",          # NEW
+    "reasoning_hint_level": 0,     # NEW
+}
 
     first_step = STEPS[0]
 
@@ -131,6 +134,29 @@ def evaluate_conceptual_step(step, student_answer):
     result = response.text.strip().upper()
     return result == "CORRECT"
 
+def evaluate_reasoning_step(key_ideas, student_answer):
+    import google.generativeai as genai
+
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    model = genai.GenerativeModel("gemini-3.5-flash-lite")
+
+    criteria = "Key idea(s) the answer should reflect:\n" + "\n".join(f"- {idea}" for idea in key_ideas)
+    prompt = f"""You are grading a student's short answer for a beginner PCB design tutoring app.
+Students type quick, casual answers while learning — not polished essays.
+
+{criteria}
+
+Mark CORRECT if the answer shows a reasonable grasp of the core idea(s) above,
+even if brief, informally worded, or missing minor details.
+Mark INCORRECT only if the answer is off-topic, factually wrong, just repeats
+the question back, or shows no real understanding.
+
+Student's answer: "{student_answer}"
+
+Reply with ONLY the word CORRECT or INCORRECT, and nothing else."""
+    response = model.generate_content(prompt)
+    result = response.text.strip().upper()
+    return result == "CORRECT"
 
 def evaluate_answer(step, student_answer):
     """Routes to the right evaluator depending on the step type."""
@@ -139,91 +165,144 @@ def evaluate_answer(step, student_answer):
     else:
         return evaluate_conceptual_step(step, student_answer)
 
+def advance_to_next_step(session, steps):
+    idx = session["current_step_index"] + 1
+    session["current_step_index"] = idx
+    session["hint_level"] = 0
+    session["reasoning_hint_level"] = 0
+    session["stage"] = "component"
 
-@app.post("/submit-answer", response_model=AnswerResponse)
-def submit_answer(request: AnswerRequest):
-    session = sessions.get(request.session_id)
-    if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    current_index = session["current_step_index"]
-    current_step = STEPS[current_index]
-
-    is_correct = evaluate_answer(current_step, request.answer)
-
-    if is_correct:
-        # Correct, reset hint level and move to the next step.
-        session["current_step_index"] += 1
-        session["hint_level"] = 0
-        session["attempts"] = 0
-
-        if session["current_step_index"] >= len(STEPS):
-            return AnswerResponse(
-                correct=True,
-                message="Correct! You've completed the buck converter circuit!",
-                hint_level=0,
-                step_number=len(STEPS),
-                total_steps=len(STEPS),
-                completed=True,
-            )
-
-        next_step = STEPS[session["current_step_index"]]
+    if idx >= len(steps):
         return AnswerResponse(
             correct=True,
-            message=f"Correct! Moving to step {session['current_step_index'] + 1}: {next_step['title']}",
+            message="Correct! You've completed the buck converter circuit!",
             hint_level=0,
-            step_number=session["current_step_index"] + 1,
-            total_steps=len(STEPS),
-            completed=False,
-            title=next_step["title"],
-            task=next_step["task"],
-            datasheet_reference=next_step["datasheet_reference"],
+            step_number=idx,
+            total_steps=len(steps),
+            completed=True,
+            stage=None,
         )
 
-    else:
-        # Incorrect, escalate the hint level.
-        session["hint_level"] += 1
-        session["attempts"] += 1
+    next_step = steps[idx]
+    return AnswerResponse(
+        correct=True,
+        message="Correct!",
+        hint_level=0,
+        step_number=idx + 1,
+        total_steps=len(steps),
+        completed=False,
+        title=next_step["title"],
+        task=next_step["task"],
+        datasheet_reference=next_step.get("datasheet_reference"),
+        stage="component" if "reasoning_prompt" in next_step["expected_answer"] else None,
+    )
 
-        if session["hint_level"] > 4:
-            # User has exhausted all hints, auto-advance so they're not stuck in a loop.
-            session["current_step_index"] += 1
-            session["hint_level"] = 0
-            session["attempts"] = 0
 
-            if session["current_step_index"] >= len(STEPS):
-                return AnswerResponse(
-                    correct=True,
-                    message="Let's move on — you've completed the circuit!",
-                    hint_level=0,
-                    step_number=len(STEPS),
-                    total_steps=len(STEPS),
-                    completed=True,
-                )
+@app.post("/submit-answer", response_model=AnswerResponse)
+def submit_answer(req: AnswerRequest):
+    session = sessions.get(req.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
 
-            next_step = STEPS[session["current_step_index"]]
+    steps = CIRCUIT_DATA["steps"]
+    idx = session["current_step_index"]
+    current_step = steps[idx]
+    expected = current_step["expected_answer"]
+    staged = "reasoning_prompt" in expected
+    stage = session.get("stage", "component")
+
+    #Stage A: placement/keyword check 
+    if staged and stage == "component":
+        if evaluate_component_step(current_step, req.answer):
+            session["stage"] = "reasoning"
+            session["reasoning_hint_level"] = 0
             return AnswerResponse(
                 correct=True,
-                message=f"Let's move on to step {session['current_step_index'] + 1}: {next_step['title']}",
+                message="Nice — that's placed correctly. Now let's think about why.",
                 hint_level=0,
-                step_number=session["current_step_index"] + 1,
-                total_steps=len(STEPS),
+                step_number=idx + 1,
+                total_steps=len(steps),
                 completed=False,
-                title=next_step["title"],
-                task=next_step["task"],
-                datasheet_reference=next_step["datasheet_reference"],
+                title=current_step["title"],
+                task=expected["reasoning_prompt"],
+                datasheet_reference=current_step.get("datasheet_reference"),
+                stage="reasoning",
             )
-
-        hint_text = current_step["hints"][str(session["hint_level"])]
+        session["hint_level"] = session.get("hint_level", 0) + 1
+        hint_level = session["hint_level"]
+        hints = current_step.get("hints", [])
+        if hint_level > 4:
+            session["stage"] = "reasoning"
+            session["hint_level"] = 0
+            return AnswerResponse(
+                correct=False,
+                message="No worries — here's the placement. Let's move on to why it matters.",
+                hint_level=0,
+                step_number=idx + 1,
+                total_steps=len(steps),
+                completed=False,
+                title=current_step["title"],
+                task=expected["reasoning_prompt"],
+                datasheet_reference=current_step.get("datasheet_reference"),
+                stage="reasoning",
+            )
+        hint_text = hints.get(str(min(hint_level, len(hints)))) or "Take another look at the datasheet section referenced above."
         return AnswerResponse(
             correct=False,
             message=hint_text,
-            hint_level=session["hint_level"],
-            step_number=current_index + 1,
-            total_steps=len(STEPS),
+            hint_level=hint_level,
+            step_number=idx + 1,
+            total_steps=len(steps),
             completed=False,
             title=current_step["title"],
             task=current_step["task"],
-            datasheet_reference=current_step["datasheet_reference"],
+            datasheet_reference=current_step.get("datasheet_reference"),
+            stage="component",
         )
-    
+
+    #Stage B: reasoning follow-up 
+    if staged and stage == "reasoning":
+        if evaluate_reasoning_step(expected["reasoning_key_ideas"], req.answer):
+            return advance_to_next_step(session, steps)
+        session["reasoning_hint_level"] = session.get("reasoning_hint_level", 0) + 1
+        r_hint_level = session["reasoning_hint_level"]
+        r_hints = expected.get("reasoning_hints", [])
+        if r_hint_level > 4:
+            return advance_to_next_step(session, steps)
+        hint_text = r_hints.get(str(min(r_hint_level, len(r_hints)))) or "Think about what happens the instant the switch turns on or off."
+        return AnswerResponse(
+            correct=False,
+            message=hint_text,
+            hint_level=r_hint_level,
+            step_number=idx + 1,
+            total_steps=len(steps),
+            completed=False,
+            title=current_step["title"],
+            task=expected["reasoning_prompt"],
+            datasheet_reference=current_step.get("datasheet_reference"),
+            stage="reasoning",
+        )
+
+    #Unstaged steps (1, 2, 8): original single-shot flow
+    if evaluate_answer(current_step, req.answer):
+        return advance_to_next_step(session, steps)
+
+    session["hint_level"] = session.get("hint_level", 0) + 1
+    hint_level = session["hint_level"]
+    hints = current_step.get("hints", [])
+    if hint_level > 4:
+        return advance_to_next_step(session, steps)
+    hint_text = hints[min(hint_level, len(hints)) - 1] if hints else "Take another look at the datasheet section referenced above."
+    return AnswerResponse(
+        correct=False,
+        message=hint_text,
+        hint_level=hint_level,
+        step_number=idx + 1,
+        total_steps=len(steps),
+        completed=False,
+        title=current_step["title"],
+        task=current_step["task"],
+        datasheet_reference=current_step.get("datasheet_reference"),
+        stage=None,
+    )
+

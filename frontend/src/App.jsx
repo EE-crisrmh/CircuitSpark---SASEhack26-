@@ -302,7 +302,7 @@ function CircuitBuiltScreen({ onKeepBuilding }) {
   );
 }
 
-// ---------- Main App ----------
+// Main App
 export default function App() {
   const [screen, setScreen] = useState("title"); // "title" | "library" | "building" | "completed"
   const [sessionId, setSessionId] = useState(null);
@@ -315,6 +315,7 @@ export default function App() {
   const [hintLevel, setHintLevel] = useState(0);
   const [loading, setLoading] = useState(false);
   const [datasheetRef, setDatasheetRef] = useState(null);
+  const [stage, setStage] = useState(null);
 
   async function startSession() {
     setLoading(true);
@@ -331,6 +332,7 @@ export default function App() {
     setAnswer("");
     setLoading(false);
     setScreen("building");
+    setStage(data.stage ?? null);
   }
 
   async function submitAnswer(e) {
@@ -441,6 +443,26 @@ export default function App() {
           Step {stepNumber} of {totalSteps}
         </p>
         <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20, color: "#f8fafc" }}>{title}</h2>
+        <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20, color: "#f8fafc" }}>{title}</h2>
+
+{stage === "reasoning" && (
+  <div style={{
+    display: "inline-block",
+    background: "#eab308",
+    color: "#1e293b",
+    fontFamily: '"Space Mono", monospace',
+    fontSize: 12,
+    fontWeight: "bold",
+    padding: "4px 10px",
+    borderRadius: 6,
+    marginBottom: 8,
+  }}>
+    NOW: explain your reasoning
+  </div>
+)}
+
+
+<p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.5 }}>{task}</p>
         <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.5 }}>{task}</p>
 
         {datasheetRef && (

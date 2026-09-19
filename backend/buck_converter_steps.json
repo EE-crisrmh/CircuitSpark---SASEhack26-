@@ -50,13 +50,25 @@
       "task": "Place the TPS54331 IC on the canvas. Which pin should VIN (12V) connect to?",
       "expected_answer": {
         "components": ["TPS54331"],
-        "connections": [["VIN_12V", "TPS54331.VIN"]]
+        "connections": [["VIN_12V", "TPS54331.VIN"]],
+        "reasoning_prompt": "You placed the IC. Now: which pin number is VIN, and why isn't it Pin 1?",
+        "reasoning_key_ideas": [
+          "VIN is Pin 2, not Pin 1",
+          "Pin 1 is BOOT, used for the internal gate-drive bootstrap capacitor, not the input rail",
+          "VIN feeds the internal power switch that performs the actual buck conversion"
+        ],
+        "reasoning_hints": {
+          "1": "Look closely at the pin numbering in the datasheet's pin diagram — it's easy to assume Pin 1 is the input.",
+          "2": "Pin 1 has a completely different job related to driving the internal switch, not receiving input power.",
+          "3": "Check Section 9.1, Pin Configuration, and read what Pin 1 (BOOT) is actually used for.",
+          "4": "Pin 2 is VIN — that's where your 12V input rail connects, feeding the internal power switch. Pin 1 is BOOT, used only for the internal gate-drive bootstrap capacitor that helps switch the high-side FET on and off."
+        }
       },
       "hints": {
         "1": "The pin name usually tells you exactly what it's for.",
         "2": "Look for a pin literally labeled VIN on the package diagram.",
         "3": "Check Section 9.1, Pin Configuration, for the pin numbering and names.",
-        "4": "Pin 2 VIN is where your 12v input rail connects - Pin 1 is BOOT0, used for internal gate drive bootstrap capacitor, not the input rail, VIN feeds the internal power switch that does the actual buck conversion." 
+        "4": "Pin 2 VIN is where your 12V input rail connects - Pin 1 is BOOT0, used for internal gate drive bootstrap capacitor, not the input rail, VIN feeds the internal power switch that does the actual buck conversion."
       },
       "datasheet_reference": { "section": "9.1", "title": "Pin Configuration and Functions" }
     },
@@ -68,7 +80,19 @@
       "task": "In your own words, what are we adding here and why does it need to be there?",
       "expected_answer": {
         "components": ["capacitor"],
-        "connections": [["VIN_12V", "C1"], ["C1", "GND"]]
+        "connections": [["VIN_12V", "C1"], ["C1", "GND"]],
+        "reasoning_prompt": "Nice — you placed the input capacitor. Now: why does it need to sit right there, close to VIN?",
+        "reasoning_key_ideas": [
+          "the input cap supplies the fast burst of current the switch needs the instant it turns on, faster than the source or a long trace can respond",
+          "it keeps VIN stable and reduces high-frequency ripple/noise created by the switching",
+          "it should be placed physically close to the IC's VIN and GND pins to minimize trace inductance"
+        ],
+        "reasoning_hints": {
+          "1": "Think about what happens in the first microsecond the switch turns on — where does that sudden current come from?",
+          "2": "The source (wall adapter, battery) can't respond instantly to a sudden current demand. What can, if it's close by?",
+          "3": "Check Section 8.2, Typical Application, for why the input cap is placed immediately adjacent to VIN/GND.",
+          "4": "The input capacitor acts as a local reservoir of charge that reacts instantly, supplying the sudden current pulses the switch demands so VIN doesn't sag or ring. It has to sit physically close to the pins so the current doesn't have to travel through a long, inductive trace."
+        }
       },
       "hints": {
         "1": "Think about what happens when the regulator suddenly draws a big pulse of current from the input, all at once.",
@@ -86,7 +110,19 @@
       "task": "Place an inductor between the SW pin and the output node (VOUT).",
       "expected_answer": {
         "components": ["inductor"],
-        "connections": [["TPS54331.SW", "L1"], ["L1", "VOUT_3V3"]]
+        "connections": [["TPS54331.SW", "L1"], ["L1", "VOUT_3V3"]],
+        "reasoning_prompt": "Why does the inductor go between SW and VOUT instead of just wiring SW straight to VOUT?",
+        "reasoning_key_ideas": [
+          "the inductor stores energy while the switch is on and releases it while the switch is off",
+          "this turns the choppy on/off switched pulses at SW into a smooth, continuous current at VOUT",
+          "without it, VOUT would just be a squarewave-ish average of VIN, not a stable DC voltage"
+        ],
+        "reasoning_hints": {
+          "1": "The SW pin isn't a steady voltage — it's a pulse train switching rapidly between VIN and ground. What would VOUT look like if it were wired straight to that?",
+          "2": "Think about what component 'remembers' current flow and keeps it going even when the switch briefly turns off.",
+          "3": "Check Section 8.2.2, Inductor Selection, for how the inductor's energy storage relates to output smoothness.",
+          "4": "The inductor stores energy while SW is high and releases it smoothly while SW is low, averaging the choppy switched pulses into continuous current. Without it, VOUT would just be a noisy, unusable copy of the SW switching waveform instead of a steady DC voltage."
+        }
       },
       "hints": {
         "1": "The regulator doesn't just drop voltage, it switches a pin on and off rapidly. What component stores energy between switch pulses?",
@@ -104,7 +140,19 @@
       "task": "Place a capacitor between VOUT and GND.",
       "expected_answer": {
         "components": ["capacitor"],
-        "connections": [["VOUT_3V3", "C2"], ["C2", "GND"]]
+        "connections": [["VOUT_3V3", "C2"], ["C2", "GND"]],
+        "reasoning_prompt": "The inductor already smooths current — so why do we still need a capacitor here too?",
+        "reasoning_key_ideas": [
+          "the inductor's output current still has some ripple, it's smoothed but not perfectly flat",
+          "the output capacitor filters that remaining ripple into a stable, clean DC voltage",
+          "it also helps supply/absorb sudden load current changes without VOUT dipping or spiking"
+        ],
+        "reasoning_hints": {
+          "1": "'Smoothed' doesn't mean perfectly flat — the inductor's current still has a small ripple riding on top of it.",
+          "2": "What component is good at holding a steady voltage even when the current through it varies slightly?",
+          "3": "Check Section 8.2.3, Output Capacitor Selection, for how it relates to output ripple voltage.",
+          "4": "The inductor current still has ripple on it — the output capacitor filters that remaining ripple into a clean, stable 3.3V, and helps respond instantly if the load suddenly demands more or less current."
+        }
       },
       "hints": {
         "1": "The inductor's current isn't perfectly smooth, it ripples. What smooths a ripply voltage into something stable?",
@@ -128,7 +176,19 @@
           ["FB_NODE", "R2"],
           ["R2", "GND"],
           ["FB_NODE", "TPS54331.FB"]
-        ]
+        ],
+        "reasoning_prompt": "Why does FB need a scaled-down version of VOUT instead of just seeing the full 3.3V directly?",
+        "reasoning_key_ideas": [
+          "the IC's FB pin compares against a fixed small internal reference voltage (around 0.8V), not 3.3V",
+          "R1/R2 form a divider that scales VOUT down so the midpoint matches that reference when VOUT is correct",
+          "the IC adjusts its switching duty cycle based on that comparison to keep VOUT locked at 3.3V"
+        ],
+        "reasoning_hints": {
+          "1": "The FB pin isn't comparing against 3.3V internally — it has its own fixed, much smaller reference voltage.",
+          "2": "What do two resistors in series, tapped in the middle, let you do to a voltage?",
+          "3": "Check Section 8.2.4, Feedback Resistor Selection, for the divider ratio formula and the internal reference value.",
+          "4": "R1 and R2 scale VOUT down so the FB node sits at the IC's internal reference (about 0.8V) exactly when VOUT is 3.3V. The IC compares FB to that reference and speeds up or slows down switching to correct any drift."
+        }
       },
       "hints": {
         "1": "The regulator needs to know what the output voltage actually is, in order to correct it. How would you measure a voltage using only resistors?",
@@ -159,7 +219,7 @@
         "1": "Walk the schematic left to right: VIN → IC → SW → ... → VOUT. What's each stop doing?",
         "2": "Don't forget the feedback loop, it's not just left-to-right, there's a path going backward too.",
         "3": "Re-read Section 8.1, Overview, which usually summarizes the whole control loop in a few sentences.",
-        "4": "5V enters at VIN. The IC rapidly switches the SW pin on/off. The inductor and output capacitor turn those pulses into a smooth 3.3V. The feedback resistors sample that 3.3V and report it to FB, so the IC can keep adjusting its switching to hold the output steady even as load changes."
+        "4": "12V enters at VIN. The IC rapidly switches the SW pin on/off. The inductor and output capacitor turn those pulses into a smooth 3.3V. The feedback resistors sample that 3.3V and report it to FB, so the IC can keep adjusting its switching to hold the output steady even as load changes."
       },
       "datasheet_reference": { "section": "8.1", "title": "Overview" }
     }
