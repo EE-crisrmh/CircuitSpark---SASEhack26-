@@ -111,3 +111,10 @@ def evaluate_conceptual_step(step, student_answer):
 
         return "CORRECT" in result 
 
+def evaluate_answer(step, student_answer): 
+        """Routes to the right evaluator depending on the step type."""
+        if "components" in step["expected_answer"]:
+                return evaluate_component_step(step, student_answer)
+        else:
+                return evaluate_conceptual_step(step, student_answer)
+        
