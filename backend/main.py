@@ -19,7 +19,7 @@ app.add_middleware(
 )
 
 # Open the JSON file and load its contents into a Python dictionary.
-with open("buck_converter_steps.json") as f:
+with open("ldo_steps.json") as f:
     CIRCUIT_DATA = json.load(f)
 
 STEPS = CIRCUIT_DATA["steps"]

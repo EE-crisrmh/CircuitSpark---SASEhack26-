@@ -184,7 +184,6 @@ function StartScreen({ onStart }) {
   );
 }
 
-// ---------- Screen 2: Circuit Library ----------
 function CircuitLibraryScreen({ onSelectBuck, loading }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "#ffffff", overflowY: "auto", padding: "60px 40px", boxSizing: "border-box" }}>
@@ -210,17 +209,17 @@ function CircuitLibraryScreen({ onSelectBuck, loading }) {
           >
             <div style={{ fontSize: 36, marginBottom: 12 }}>⚡</div>
             <h3 style={{ fontFamily: '"Orbitron", sans-serif', color: "#1d4ed8", margin: "0 0 8px", fontSize: 17 }}>
-              Buck Converter
+              LDO Regulator
             </h3>
             <p style={{ fontFamily: '"Space Mono", monospace', color: "#475569", fontSize: 13, lineHeight: 1.5 }}>
-              Build a 12V → 3.3V switching regulator using the TPS54331, guided by the real datasheet.
+              Build a 3.3V → 2.8V linear regulator using the TPS79333-EP, guided by the real datasheet.
             </p>
             <div style={{ marginTop: 16, fontWeight: "bold", color: "#1d4ed8", fontFamily: '"Space Mono", monospace', fontSize: 13 }}>
               {loading ? "Loading..." : "Start →"}
             </div>
           </div>
 
-          {["LDO Regulator", "555 Timer Circuit"].map((name) => (
+          {["Buck Converter", "555 Timer Circuit"].map((name) => (
             <div
               key={name}
               style={{ border: "2px dashed #cbd5e1", borderRadius: 12, padding: 20, background: "#f8fafc", opacity: 0.6 }}
@@ -237,6 +236,8 @@ function CircuitLibraryScreen({ onSelectBuck, loading }) {
     </div>
   );
 }
+
+
 
 // ---------- Screen 4: Circuit Built (completion) ----------
 const CONCEPT_CHIPS = [
@@ -519,7 +520,7 @@ export default function App() {
           {datasheetRef && (
             <p style={{ fontSize: 12, marginTop: 4 }}>
               <a
-                href="https://www.ti.com/lit/ds/symlink/tps54331.pdf"
+                href="https://www.ti.com/lit/ds/symlink/tps79333-ep.pdf"
                 target="_blank"
                 rel="noreferrer"
                 style={{ color: "#60a5fa" }}
