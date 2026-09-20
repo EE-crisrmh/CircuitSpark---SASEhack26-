@@ -85,8 +85,9 @@ def start_session():
 
 
 def evaluate_component_step(step, student_answer):
-    """For steps 3-7: keyword match, no API call needed."""
-    expected_components = [c.lower() for c in step["expected_answer"]["components"]]
+    """For steps 3-6: keyword match, no API call needed."""
+    expected = step["expected_answer"]
+    expected_components = [c.lower() for c in expected["components"]]
     answer_lower = student_answer.lower()
 
     abbreviations = {
@@ -99,8 +100,14 @@ def evaluate_component_step(step, student_answer):
         accepted_terms = abbreviations.get(comp, [comp])
         if not any(term in answer_lower for term in accepted_terms):
             return False
-    return True
 
+    if "value_hint" in expected:
+        normalized_hint = expected["value_hint"].lower().replace("µ", "u")
+        normalized_answer = answer_lower.replace("µ", "u")
+        if normalized_hint not in normalized_answer:
+            return False
+
+    return True
 
 def evaluate_conceptual_step(step, student_answer):
     """For steps 1, 2, and 8: uses Gemini to judge free-text answers."""

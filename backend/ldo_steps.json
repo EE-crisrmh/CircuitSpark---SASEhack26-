@@ -79,12 +79,13 @@
 
     {
       "step_id": 4,
-      "title": "Add the input capacitor (C4)",
+      "title": "Add Cap 1 (input capacitor)",
       "objective": "Understand why the input needs a capacitor.",
       "task": "Place a capacitor between IN and GND.",
       "expected_answer": {
         "components": ["capacitor"],
-        "connections": [["3V3", "C4"], ["C4", "GND"]],
+        "value_hint": "0.1uF",
+        "connections": [["3V3", "Cap1"], ["Cap1", "GND"]],
         "reasoning_prompt": "Why does the input side need this capacitor?",
         "reasoning_key_ideas": [
           "stabilizes the input voltage the regulator sees, filtering noise and transients from the upstream supply",
@@ -99,22 +100,23 @@
         }
       },
       "hints": {
-        "1": "Think about what happens if the input rail has noise on it.",
+        "1": "Think about what happens if the input rail has noise on it. Which value from the options makes sense for filtering a power rail?",
         "2": "Look at what's connected directly between IN and GND.",
         "3": "Check the Application Information section for the recommended input capacitance.",
-        "4": "The input capacitor (0.1µF) filters noise on the input rail so the regulator sees a clean, stable 3.3V."
+        "4": "The input capacitor is Cap 1 (0.1µF) — it filters noise on the input rail so the regulator sees a clean, stable 3.3V."
       },
       "datasheet_reference": { "section": "9", "title": "Application and Implementation" }
     },
 
     {
       "step_id": 5,
-      "title": "Add the output capacitor (C5)",
+      "title": "Add Cap 2 (output capacitor)",
       "objective": "Understand why the output needs a capacitor for loop stability.",
       "task": "Place a capacitor between OUT and GND.",
       "expected_answer": {
         "components": ["capacitor"],
-        "connections": [["2V8", "C5"], ["C5", "GND"]],
+        "value_hint": "2.2uF",
+        "connections": [["2V8", "Cap2"], ["Cap2", "GND"]],
         "reasoning_prompt": "Why is this output capacitor especially important for an LDO?",
         "reasoning_key_ideas": [
           "LDOs need a minimum output capacitance to keep the internal feedback loop stable",
@@ -124,46 +126,47 @@
         "reasoning_hints": {
           "1": "An LDO's pass transistor is controlled by a feedback loop — what keeps that loop from oscillating?",
           "2": "Think about what happens if the load suddenly needs a burst of current faster than the regulator can react.",
-          "3": "Check the datasheet's stability requirements — LDOs often need a minimum output capacitance (and sometimes an ESR range).",
+          "3": "Check the datasheet's stability requirements — LDOs often need a minimum output capacitance.",
           "4": "The output cap is required for loop stability — without enough capacitance here, the LDO's feedback loop can oscillate. It also supplies sudden load current demands faster than the regulator itself can respond."
         }
       },
       "hints": {
-        "1": "LDOs have an internal feedback loop that's sensitive to output capacitance.",
+        "1": "This is usually the largest of the three cap values, since it holds up the regulated output.",
         "2": "Look at what's connected directly between OUT and GND.",
         "3": "Check the stability requirements in the Application Information section.",
-        "4": "The output capacitor (2.2µF) keeps the LDO's internal feedback loop stable and helps supply sudden load current changes."
+        "4": "The output capacitor is Cap 2 (2.2µF) — it keeps the LDO's internal feedback loop stable and helps supply sudden load current changes."
       },
       "datasheet_reference": { "section": "9", "title": "Application and Implementation" }
     },
 
     {
       "step_id": 6,
-      "title": "Add the bypass capacitor and finish the circuit",
+      "title": "Add Cap 3 (bypass) and finish the circuit",
       "objective": "Understand the BP pin and trace the complete circuit.",
       "task": "Place a small capacitor between BP and GND, then connect EN directly to IN.",
       "expected_answer": {
         "components": ["capacitor"],
-        "connections": [["TPS79333.BP", "C6"], ["C6", "GND"], ["TPS79333.EN", "3V3"]],
+        "value_hint": "0.01uF",
+        "connections": [["TPS79333.BP", "Cap3"], ["Cap3", "GND"], ["TPS79333.EN", "3V3"]],
         "reasoning_prompt": "Now trace the whole circuit: what does BP do, and what's the full path from 3.3V in to 2.8V out?",
         "reasoning_key_ideas": [
           "BP is the bypass pin for the internal voltage reference, not the output itself",
           "a small capacitor here filters noise on that internal reference, which is what makes this LDO family ultra-low-noise",
           "EN tied to IN keeps the regulator always enabled whenever input power is present",
-          "C4 filters the input, the internal pass transistor and feedback loop regulate OUT to 2.8V, C5 stabilizes the output, and GND is the common return path"
+          "Cap 1 filters the input, the internal pass transistor and feedback loop regulate OUT to 2.8V, Cap 2 stabilizes the output, and GND is the common return path"
         ],
         "reasoning_hints": {
           "1": "BP isn't in the main power path from IN to OUT — it connects to something internal to the chip.",
           "2": "This IC is marketed as 'ultra-low-noise' — what's usually the source of a regulator's output noise?",
           "3": "Check the datasheet for what the bypass pin filters — it's the internal voltage reference.",
-          "4": "BP bypasses the IC's internal voltage reference — a small cap there filters reference noise, which is what gives this LDO family its ultra-low output noise. Overall: C4 filters the input, EN tied to IN keeps the part always on, the internal loop regulates OUT to 2.8V using the clean reference, C6 keeps that reference quiet, and C5 stabilizes the output loop."
+          "4": "BP bypasses the IC's internal voltage reference — a small cap there filters reference noise, which is what gives this LDO family its ultra-low output noise. Overall: Cap 1 filters the input, EN tied to IN keeps the part always on, the internal loop regulates OUT to 2.8V using the clean reference, Cap 3 keeps that reference quiet, and Cap 2 stabilizes the output loop."
         }
       },
       "hints": {
-        "1": "BP connects to something inside the chip, not directly to IN or OUT.",
+        "1": "This is the smallest of the three cap values — it's filtering something tiny and internal, not the main power rails.",
         "2": "Look at what's connected directly between BP and GND.",
         "3": "Check the Pin Configuration section for what the BP (bypass) pin does.",
-        "4": "The bypass capacitor (0.01µF) filters the internal reference voltage, reducing output noise — a key feature of this ultra-low-noise LDO family."
+        "4": "The bypass capacitor is Cap 3 (0.01µF) — it filters the internal reference voltage, reducing output noise, a key feature of this ultra-low-noise LDO family."
       },
       "datasheet_reference": { "section": "5", "title": "Pin Configuration and Functions" }
     }

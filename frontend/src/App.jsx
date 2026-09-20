@@ -62,6 +62,50 @@ function FloaterIcon({ type }) {
     </svg>
   );
 }
+const CAP_OPTIONS = [
+  { value: "0.1uF", label: "0.1µF" },
+  { value: "0.01uF", label: "0.01µF" },
+  { value: "2.2uF", label: "2.2µF" },
+];
+
+function CapacitorPicker({ task, feedback, hintLevel, loading, onPick }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(10,22,40,0.6)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "#0f1c33", border: "2px solid #1d4ed8", borderRadius: 14, padding: "32px 36px", maxWidth: 480, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+        <div style={{ fontSize: 34, marginBottom: 10 }}>⚡</div>
+        <h3 style={{ fontFamily: '"Orbitron", sans-serif', color: "#f8fafc", fontSize: 18, marginBottom: 10 }}>
+          Which component should we place here?
+        </h3>
+        <p style={{ color: "#cbd5e1", fontFamily: '"Space Mono", monospace', fontSize: 13, marginBottom: 22, lineHeight: 1.5 }}>
+          {task}
+        </p>
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+          {CAP_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              disabled={loading}
+              onClick={() => onPick(opt.value)}
+              style={{ background: "#1d4ed8", border: "none", borderRadius: 10, padding: "18px 16px", cursor: loading ? "default" : "pointer", color: "#fff", fontFamily: '"Space Mono", monospace', fontSize: 13, fontWeight: "bold", width: 120 }}
+            >
+              <svg width="40" height="30" viewBox="0 0 40 30" style={{ display: "block", margin: "0 auto 8px" }}>
+                <line x1="0" y1="15" x2="16" y2="15" stroke="#eab308" strokeWidth="2" />
+                <line x1="16" y1="2" x2="16" y2="28" stroke="#eab308" strokeWidth="2" />
+                <line x1="24" y1="2" x2="24" y2="28" stroke="#eab308" strokeWidth="2" />
+                <line x1="24" y1="15" x2="40" y2="15" stroke="#eab308" strokeWidth="2" />
+              </svg>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {feedback && hintLevel > 0 && (
+          <div style={{ marginTop: 20, padding: 12, fontSize: 13, lineHeight: 1.5, background: "#3f2d12", color: "#fcd34d", borderRadius: 6, border: "1px solid #78350f" }}>
+            {feedback}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // Shared CSS for all three "bookend" screens (title, library, completed)
 const bookendStyles = `
@@ -237,8 +281,6 @@ function CircuitLibraryScreen({ onSelectBuck, loading }) {
   );
 }
 
-
-
 // ---------- Screen 4: Circuit Built (completion) ----------
 const CONCEPT_CHIPS = [
   { text: "Switching Regulation", top: 15, duration: 24, delay: -3 },
@@ -336,15 +378,14 @@ export default function App() {
     setStage(data.stage ?? null);
   }
 
-  async function submitAnswer(e) {
-    e.preventDefault();
-    if (!answer.trim() || loading) return;
+  async function submitAnswerText(text) {
+    if (!text.trim() || loading) return;
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/submit-answer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, answer }),
+        body: JSON.stringify({ session_id: sessionId, answer: text }),
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -359,6 +400,7 @@ export default function App() {
       if (data.title) setTitle(data.title);
       if (data.task) setTask(data.task);
       if (data.datasheet_reference) setDatasheetRef(data.datasheet_reference);
+      setStage(data.stage ?? null);
       if (data.correct) setAnswer("");
       if (data.completed) {
         setScreen("completed");
@@ -369,6 +411,11 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleFormSubmit(e) {
+    e.preventDefault();
+    submitAnswerText(answer);
   }
 
   function keepBuilding() {
@@ -389,71 +436,40 @@ export default function App() {
   }
 
   // screen === "building"
+  const showPicker = stage === "component" && task && task.toLowerCase().includes("capacitor");
+
   return (
     <div style={{ position: "fixed", inset: 0, fontFamily: '"Space Mono", monospace', display: "flex" }}>
       <style>{`
-        @keyframes sidebarShimmer {
-          0%   { background-position: 0% 50%; }
-          100% { background-position: 200% 50%; }
-        }
-        .cs-accent-bar {
-          height: 4px;
-          width: 100%;
-          background: linear-gradient(90deg, #1d4ed8, #eab308, #1d4ed8);
-          background-size: 200% 100%;
-          animation: sidebarShimmer 4s linear infinite;
-        }
-        @keyframes feedbackIn {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes sidebarShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+        .cs-accent-bar { height: 4px; width: 100%; background: linear-gradient(90deg, #1d4ed8, #eab308, #1d4ed8); background-size: 200% 100%; animation: sidebarShimmer 4s linear infinite; }
+        @keyframes feedbackIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         .cs-feedback { animation: feedbackIn 0.35s ease-out; }
-        .cs-textarea:focus {
-          outline: none;
-          border-color: #60a5fa !important;
-          box-shadow: 0 0 0 3px rgba(96,165,250,0.25);
-        }
-        .cs-submit {
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-        .cs-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 18px rgba(96,165,250,0.35);
-        }
+        .cs-textarea:focus { outline: none; border-color: #60a5fa !important; box-shadow: 0 0 0 3px rgba(96,165,250,0.25); }
+        .cs-submit { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .cs-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(96,165,250,0.35); }
         .cs-dot { transition: all 0.35s ease; }
-        .cs-sidebar-spark {
-          position: absolute;
-          opacity: 0.06;
-          animation: driftX linear infinite;
-        }
-        @keyframes driftX {
-          0%   { transform: translate(0, 0) rotate(0deg); }
-          50%  { transform: translate(30px, -20px) rotate(10deg); }
-          100% { transform: translate(0, 0) rotate(0deg); }
-        }
+        .cs-sidebar-spark { position: absolute; opacity: 0.06; animation: driftX linear infinite; }
+        @keyframes driftX { 0% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(30px, -20px) rotate(10deg); } 100% { transform: translate(0, 0) rotate(0deg); } }
       `}</style>
 
-      {/* Canvas: 80% */}
+      {showPicker && (
+        <CapacitorPicker
+          task={task}
+          feedback={feedback}
+          hintLevel={hintLevel}
+          loading={loading}
+          onPick={(value) => submitAnswerText(`${value} capacitor`)}
+        />
+      )}
+
       <div style={{ flex: "0 0 80%", height: "100%" }}>
-        <SchematicView currentStep={stepNumber} totalSteps={totalSteps} completed={false} />
+        <SchematicView currentStep={stepNumber} totalSteps={totalSteps} completed={false} stage={stage} />
       </div>
 
-      {/* Sidebar: 20% */}
-      <div
-        style={{
-          flex: "0 0 20%",
-          height: "100%",
-          overflowY: "auto",
-          background: "linear-gradient(180deg, #0a1628 0%, #0f1c33 100%)",
-          color: "#e2e8f0",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div style={{ flex: "0 0 20%", height: "100%", overflowY: "auto", background: "linear-gradient(180deg, #0a1628 0%, #0f1c33 100%)", color: "#e2e8f0", position: "relative", display: "flex", flexDirection: "column" }}>
         <div className="cs-accent-bar" />
 
-        {/* faint drifting sparks in the background */}
         {[
           { top: "15%", left: "70%", duration: 14, delay: -2 },
           { top: "55%", left: "15%", duration: 18, delay: -6 },
@@ -471,14 +487,8 @@ export default function App() {
                 key={n}
                 className="cs-dot"
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: "bold",
+                  width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: "bold",
                   border: `2px solid ${n < stepNumber ? "#4ade80" : n === stepNumber ? "#eab308" : "#334155"}`,
                   background: n < stepNumber ? "#4ade80" : "transparent",
                   color: n < stepNumber ? "#0a1628" : n === stepNumber ? "#eab308" : "#64748b",
@@ -491,26 +501,11 @@ export default function App() {
             ))}
           </div>
 
-          <p style={{ color: "#64748b", margin: 0, fontSize: 13 }}>
-            Step {stepNumber} of {totalSteps}
-          </p>
-          <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20, color: "#f8fafc", fontFamily: '"Orbitron", sans-serif' }}>
-            {title}
-          </h2>
+          <p style={{ color: "#64748b", margin: 0, fontSize: 13 }}>Step {stepNumber} of {totalSteps}</p>
+          <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20, color: "#f8fafc", fontFamily: '"Orbitron", sans-serif' }}>{title}</h2>
 
           {stage === "reasoning" && (
-            <div style={{
-              display: "inline-block",
-              background: "#eab308",
-              color: "#1e293b",
-              fontFamily: '"Space Mono", monospace',
-              fontSize: 12,
-              fontWeight: "bold",
-              padding: "4px 10px",
-              borderRadius: 6,
-              marginBottom: 8,
-              width: "fit-content",
-            }}>
+            <div style={{ display: "inline-block", background: "#eab308", color: "#1e293b", fontFamily: '"Space Mono", monospace', fontSize: 12, fontWeight: "bold", padding: "4px 10px", borderRadius: 6, marginBottom: 8, width: "fit-content" }}>
               NOW: explain your reasoning
             </div>
           )}
@@ -519,57 +514,30 @@ export default function App() {
 
           {datasheetRef && (
             <p style={{ fontSize: 12, marginTop: 4 }}>
-              <a
-                href="https://www.ti.com/lit/ds/symlink/tps79333-ep.pdf"
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "#60a5fa" }}
-              >
+              <a href="https://www.ti.com/lit/ds/symlink/tps79333-ep.pdf" target="_blank" rel="noreferrer" style={{ color: "#60a5fa" }}>
                 Datasheet: Section {datasheetRef.section} — {datasheetRef.title}
               </a>
             </p>
           )}
 
-          <form onSubmit={submitAnswer} style={{ marginTop: "auto" }}>
-            <textarea
-              className="cs-textarea"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              rows={5}
-              style={{
-                width: "100%",
-                padding: 10,
-                boxSizing: "border-box",
-                background: "#0f1420",
-                color: "#e2e8f0",
-                border: "1px solid #334155",
-                borderRadius: 6,
-                resize: "vertical",
-                fontFamily: "inherit",
-                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-              }}
-              placeholder="Type your answer..."
-            />
-            <button type="submit" disabled={loading} className="cs-submit" style={{ ...btnStyle, width: "100%", marginTop: 10 }}>
-              {loading ? "Checking..." : "Submit"}
-            </button>
-          </form>
+          {!showPicker && (
+            <form onSubmit={handleFormSubmit} style={{ marginTop: "auto" }}>
+              <textarea
+                className="cs-textarea"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                rows={5}
+                style={{ width: "100%", padding: 10, boxSizing: "border-box", background: "#0f1420", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 6, resize: "vertical", fontFamily: "inherit", transition: "border-color 0.2s ease, box-shadow 0.2s ease" }}
+                placeholder="Type your answer..."
+              />
+              <button type="submit" disabled={loading} className="cs-submit" style={{ ...btnStyle, width: "100%", marginTop: 10 }}>
+                {loading ? "Checking..." : "Submit"}
+              </button>
+            </form>
+          )}
 
-          {feedback && (
-            <div
-              key={feedback}
-              className="cs-feedback"
-              style={{
-                marginTop: 16,
-                padding: 12,
-                fontSize: 13,
-                lineHeight: 1.5,
-                background: hintLevel > 0 ? "#3f2d12" : "#123f22",
-                color: hintLevel > 0 ? "#fcd34d" : "#86efac",
-                borderRadius: 6,
-                border: `1px solid ${hintLevel > 0 ? "#78350f" : "#166534"}`,
-              }}
-            >
+          {feedback && !showPicker && (
+            <div key={feedback} className="cs-feedback" style={{ marginTop: 16, padding: 12, fontSize: 13, lineHeight: 1.5, background: hintLevel > 0 ? "#3f2d12" : "#123f22", color: hintLevel > 0 ? "#fcd34d" : "#86efac", borderRadius: 6, border: `1px solid ${hintLevel > 0 ? "#78350f" : "#166534"}` }}>
               {feedback}
             </div>
           )}
