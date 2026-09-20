@@ -25,7 +25,17 @@ export default function SchematicView({ currentStep, totalSteps, completed, stag
 
   const popClass = (revealStep) => (justRevealed === revealStep ? "sch-pop" : "");
 
-  const icPlaced = isDone(REVEAL.icPlaced);
+  // The IC counts as "placed" (full body + pin labels visible) as soon as the
+  // student has correctly identified/placed it — even if we're still in the
+  // reasoning sub-question for that same step (currentStep hasn't incremented
+  // yet in that case). This is what lets the student actually see the EN pin
+  // while they're being asked to reason about it, instead of discussing a
+  // pin they can't see.
+  const icPlaced =
+    isDone(REVEAL.icPlaced) || (currentStep === REVEAL.icPlaced && stage === "reasoning");
+  // Ghost/candidate box shown while the student is still figuring out which
+  // IC belongs here. It intentionally does NOT show the part number — that's
+  // the answer to the question being asked at this stage.
   const icSelected = currentStep >= REVEAL.icSelected && !icPlaced;
   const cap1Done = isDone(REVEAL.cap1);
   const cap2Done = isDone(REVEAL.cap2);
@@ -134,8 +144,10 @@ export default function SchematicView({ currentStep, totalSteps, completed, stag
           {icSelected && (
             <g className="sch-ghost">
               <rect x={IC_LEFT} y={IC_TOP} width={IC_RIGHT - IC_LEFT} height={IC_BOTTOM - IC_TOP} rx="6" className="sch-ic-ghost" />
-              <text x={IC_LEFT + 15} y={(IC_TOP + IC_BOTTOM) / 2} className="sch-label" fontWeight="bold">TPS79333</text>
-              <text x={IC_LEFT + 20} y={IC_BOTTOM - 15} className="sch-label" fontSize="11">selected</text>
+              {/* Intentionally no part number here — identifying the IC is the
+                  question being asked at this point in the tutorial. */}
+              <text x={IC_LEFT + 15} y={(IC_TOP + IC_BOTTOM) / 2} className="sch-label" fontWeight="bold">IC?</text>
+              <text x={IC_LEFT + 20} y={IC_BOTTOM - 15} className="sch-label" fontSize="11">candidate footprint</text>
             </g>
           )}
 
