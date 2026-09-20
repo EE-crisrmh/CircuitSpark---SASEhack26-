@@ -292,7 +292,7 @@ def submit_answer(req: AnswerRequest):
     hints = current_step.get("hints", [])
     if hint_level > 4:
         return advance_to_next_step(session, steps)
-    hint_text = hints[min(hint_level, len(hints)) - 1] if hints else "Take another look at the datasheet section referenced above."
+    hint_text = hints.get(str(min(hint_level, len(hints)))) or "Take another look at the datasheet section referenced above."
     return AnswerResponse(
         correct=False,
         message=hint_text,
