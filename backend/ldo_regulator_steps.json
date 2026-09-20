@@ -1,0 +1,171 @@
+{
+  "project_type": "ldo_regulator",
+  "regulator_ic": "TPS79333-EP",
+  "input_voltage": "3.3V",
+  "output_voltage": "2.8V",
+  "output_current": "1A",
+
+  "steps": [
+    {
+      "step_id": 1,
+      "title": "Why not just a resistor or diode?",
+      "objective": "Understand why an LDO is needed instead of a passive voltage drop.",
+      "task": "In your own words: the input is 3.3V and we need a steady 2.8V. Why not just use a resistor divider or a diode drop to get there?",
+      "expected_answer": {
+        "type": "conceptual",
+        "key_ideas": [
+          "a resistor divider's output sags or shifts as load current changes",
+          "an LDO actively regulates output voltage regardless of load current",
+          "a diode drop is fixed and not adjustable or stable across temperature/current"
+        ]
+      },
+      "hints": {
+        "1": "Think about what happens to a resistor divider's output voltage if the load suddenly draws more current.",
+        "2": "A diode's forward voltage isn't exactly controllable and drifts with temperature.",
+        "3": "An LDO has a feedback loop constantly correcting its output — a resistor or diode has no feedback at all.",
+        "4": "A resistor divider or diode drop gives you an uncontrolled, load-dependent voltage. An LDO uses a feedback loop to actively hold the output at a fixed 2.8V no matter how the load current changes."
+      },
+      "datasheet_reference": { "section": "7", "title": "Detailed Description" }
+    },
+
+    {
+      "step_id": 2,
+      "title": "Meet the TPS79333-EP",
+      "objective": "Understand the regulator's headline current rating.",
+      "task": "This LDO has a maximum rated output current. Check the datasheet's front page or Electrical Characteristics — what is it?",
+      "expected_answer": {
+        "type": "factual",
+        "value": "1A",
+        "acceptable": ["1A", "1 A", "1 amp", "1 ampere", "1000mA", "1000 mA"]
+      },
+      "hints": {
+        "1": "Check the front page 'Features' list for the headline current rating.",
+        "2": "It's a round number, in amps.",
+        "3": "Look for 'Maximum Output Current' in the Electrical Characteristics table.",
+        "4": "The TPS79333-EP is rated for up to 1A of output current."
+      },
+      "datasheet_reference": { "section": "1", "title": "Features" }
+    },
+
+    {
+      "step_id": 3,
+      "title": "Place the regulator IC",
+      "objective": "Place the TPS79333-EP and understand its EN pin.",
+      "task": "Which IC are we placing here? (Type the part number.)",
+      "expected_answer": {
+        "components": ["TPS79333"],
+        "connections": [["3V3", "TPS79333.IN"]],
+        "reasoning_prompt": "Good — this IC has a separate EN pin from IN. What's EN for, and why might a design tie it directly to IN?",
+        "reasoning_key_ideas": [
+          "EN is a dedicated enable/shutdown pin that turns the regulator's output on or off",
+          "tying EN directly to IN keeps the regulator always enabled whenever input power is present",
+          "this avoids needing a separate control signal when the regulator should simply always be on"
+        ],
+        "reasoning_hints": {
+          "1": "EN isn't part of the power path — it's a logic-level control input.",
+          "2": "What would happen if EN were left floating or tied low instead?",
+          "3": "Check the Pin Configuration section for what EN does when driven high vs low.",
+          "4": "EN must see a high logic level to enable the output. Tying it straight to IN means the regulator turns on automatically the instant input power shows up — no separate enable signal needed."
+        }
+      },
+      "hints": {
+        "1": "It's the same IC we've been discussing since step 2.",
+        "2": "Check the datasheet's title/header for the exact part number.",
+        "3": "Just type the part number: TPS79333.",
+        "4": "The IC is the TPS79333-EP, a 1A ultra-low-noise LDO regulator."
+      },
+      "datasheet_reference": { "section": "5", "title": "Pin Configuration and Functions" }
+    },
+
+    {
+      "step_id": 4,
+      "title": "Add the input capacitor (C4)",
+      "objective": "Understand why the input needs a capacitor.",
+      "task": "Place a capacitor between IN and GND.",
+      "expected_answer": {
+        "components": ["capacitor"],
+        "connections": [["3V3", "C4"], ["C4", "GND"]],
+        "reasoning_prompt": "Why does the input side need this capacitor?",
+        "reasoning_key_ideas": [
+          "stabilizes the input voltage the regulator sees, filtering noise and transients from the upstream supply",
+          "prevents the LDO's internal control loop from reacting to input noise",
+          "should be placed close to the IN pin"
+        ],
+        "reasoning_hints": {
+          "1": "Think about what kind of noise might ride in on a shared power rail.",
+          "2": "The regulator's internal loop is sensitive to a clean, stable input.",
+          "3": "Check the recommended input capacitance in the Application Information section.",
+          "4": "The input cap filters noise and transients from the upstream supply so the regulator's internal control loop sees a clean, stable input voltage."
+        }
+      },
+      "hints": {
+        "1": "Think about what happens if the input rail has noise on it.",
+        "2": "Look at what's connected directly between IN and GND.",
+        "3": "Check the Application Information section for the recommended input capacitance.",
+        "4": "The input capacitor (0.1µF) filters noise on the input rail so the regulator sees a clean, stable 3.3V."
+      },
+      "datasheet_reference": { "section": "9", "title": "Application and Implementation" }
+    },
+
+    {
+      "step_id": 5,
+      "title": "Add the output capacitor (C5)",
+      "objective": "Understand why the output needs a capacitor for loop stability.",
+      "task": "Place a capacitor between OUT and GND.",
+      "expected_answer": {
+        "components": ["capacitor"],
+        "connections": [["2V8", "C5"], ["C5", "GND"]],
+        "reasoning_prompt": "Why is this output capacitor especially important for an LDO?",
+        "reasoning_key_ideas": [
+          "LDOs need a minimum output capacitance to keep the internal feedback loop stable",
+          "without it, the regulator's control loop can oscillate or produce excessive output ripple",
+          "it also helps supply fast transient current demands from the load"
+        ],
+        "reasoning_hints": {
+          "1": "An LDO's pass transistor is controlled by a feedback loop — what keeps that loop from oscillating?",
+          "2": "Think about what happens if the load suddenly needs a burst of current faster than the regulator can react.",
+          "3": "Check the datasheet's stability requirements — LDOs often need a minimum output capacitance (and sometimes an ESR range).",
+          "4": "The output cap is required for loop stability — without enough capacitance here, the LDO's feedback loop can oscillate. It also supplies sudden load current demands faster than the regulator itself can respond."
+        }
+      },
+      "hints": {
+        "1": "LDOs have an internal feedback loop that's sensitive to output capacitance.",
+        "2": "Look at what's connected directly between OUT and GND.",
+        "3": "Check the stability requirements in the Application Information section.",
+        "4": "The output capacitor (2.2µF) keeps the LDO's internal feedback loop stable and helps supply sudden load current changes."
+      },
+      "datasheet_reference": { "section": "9", "title": "Application and Implementation" }
+    },
+
+    {
+      "step_id": 6,
+      "title": "Add the bypass capacitor and finish the circuit",
+      "objective": "Understand the BP pin and trace the complete circuit.",
+      "task": "Place a small capacitor between BP and GND, then connect EN directly to IN.",
+      "expected_answer": {
+        "components": ["capacitor"],
+        "connections": [["TPS79333.BP", "C6"], ["C6", "GND"], ["TPS79333.EN", "3V3"]],
+        "reasoning_prompt": "Now trace the whole circuit: what does BP do, and what's the full path from 3.3V in to 2.8V out?",
+        "reasoning_key_ideas": [
+          "BP is the bypass pin for the internal voltage reference, not the output itself",
+          "a small capacitor here filters noise on that internal reference, which is what makes this LDO family ultra-low-noise",
+          "EN tied to IN keeps the regulator always enabled whenever input power is present",
+          "C4 filters the input, the internal pass transistor and feedback loop regulate OUT to 2.8V, C5 stabilizes the output, and GND is the common return path"
+        ],
+        "reasoning_hints": {
+          "1": "BP isn't in the main power path from IN to OUT — it connects to something internal to the chip.",
+          "2": "This IC is marketed as 'ultra-low-noise' — what's usually the source of a regulator's output noise?",
+          "3": "Check the datasheet for what the bypass pin filters — it's the internal voltage reference.",
+          "4": "BP bypasses the IC's internal voltage reference — a small cap there filters reference noise, which is what gives this LDO family its ultra-low output noise. Overall: C4 filters the input, EN tied to IN keeps the part always on, the internal loop regulates OUT to 2.8V using the clean reference, C6 keeps that reference quiet, and C5 stabilizes the output loop."
+        }
+      },
+      "hints": {
+        "1": "BP connects to something inside the chip, not directly to IN or OUT.",
+        "2": "Look at what's connected directly between BP and GND.",
+        "3": "Check the Pin Configuration section for what the BP (bypass) pin does.",
+        "4": "The bypass capacitor (0.01µF) filters the internal reference voltage, reducing output noise — a key feature of this ultra-low-noise LDO family."
+      },
+      "datasheet_reference": { "section": "5", "title": "Pin Configuration and Functions" }
+    }
+  ]
+}
