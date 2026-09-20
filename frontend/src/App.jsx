@@ -388,16 +388,50 @@ export default function App() {
   }
 
   // screen === "building"
-  const pageStyle = {
-    position: "fixed",
-    inset: 0,
-    fontFamily: '"Space Mono", monospace',
-    background: "#0a1628",
-    color: "#e2e8f0",
-  };
-
   return (
-    <div style={{ ...pageStyle, display: "flex" }}>
+    <div style={{ position: "fixed", inset: 0, fontFamily: '"Space Mono", monospace', display: "flex" }}>
+      <style>{`
+        @keyframes sidebarShimmer {
+          0%   { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+        .cs-accent-bar {
+          height: 4px;
+          width: 100%;
+          background: linear-gradient(90deg, #1d4ed8, #eab308, #1d4ed8);
+          background-size: 200% 100%;
+          animation: sidebarShimmer 4s linear infinite;
+        }
+        @keyframes feedbackIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .cs-feedback { animation: feedbackIn 0.35s ease-out; }
+        .cs-textarea:focus {
+          outline: none;
+          border-color: #60a5fa !important;
+          box-shadow: 0 0 0 3px rgba(96,165,250,0.25);
+        }
+        .cs-submit {
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .cs-submit:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(96,165,250,0.35);
+        }
+        .cs-dot { transition: all 0.35s ease; }
+        .cs-sidebar-spark {
+          position: absolute;
+          opacity: 0.06;
+          animation: driftX linear infinite;
+        }
+        @keyframes driftX {
+          0%   { transform: translate(0, 0) rotate(0deg); }
+          50%  { transform: translate(30px, -20px) rotate(10deg); }
+          100% { transform: translate(0, 0) rotate(0deg); }
+        }
+      `}</style>
+
       {/* Canvas: 80% */}
       <div style={{ flex: "0 0 80%", height: "100%" }}>
         <SchematicView currentStep={stepNumber} totalSteps={totalSteps} completed={false} />
@@ -409,122 +443,145 @@ export default function App() {
           flex: "0 0 20%",
           height: "100%",
           overflowY: "auto",
-          borderLeft: "1px solid #1e293b",
-          padding: "24px 20px",
-          boxSizing: "border-box",
+          background: "linear-gradient(180deg, #0a1628 0%, #0f1c33 100%)",
+          color: "#e2e8f0",
+          position: "relative",
           display: "flex",
           flexDirection: "column",
         }}
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((n) => (
-            <div
-              key={n}
+        <div className="cs-accent-bar" />
+
+        {/* faint drifting sparks in the background */}
+        {[
+          { top: "15%", left: "70%", duration: 14, delay: -2 },
+          { top: "55%", left: "15%", duration: 18, delay: -6 },
+          { top: "85%", left: "60%", duration: 16, delay: -9 },
+        ].map((s, i) => (
+          <svg key={i} className="cs-sidebar-spark" style={{ top: s.top, left: s.left, animationDuration: `${s.duration}s`, animationDelay: `${s.delay}s` }} width="24" height="30" viewBox="0 0 26 34">
+            <path d="M15,0 L2,20 L11,20 L8,34 L24,12 L14,12 Z" fill="#eab308" />
+          </svg>
+        ))}
+
+        <div style={{ padding: "24px 20px", position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((n) => (
+              <div
+                key={n}
+                className="cs-dot"
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 11,
+                  fontWeight: "bold",
+                  border: `2px solid ${n < stepNumber ? "#4ade80" : n === stepNumber ? "#eab308" : "#334155"}`,
+                  background: n < stepNumber ? "#4ade80" : "transparent",
+                  color: n < stepNumber ? "#0a1628" : n === stepNumber ? "#eab308" : "#64748b",
+                  transform: n === stepNumber ? "scale(1.15)" : "scale(1)",
+                  boxShadow: n === stepNumber ? "0 0 10px rgba(234,179,8,0.5)" : "none",
+                }}
+              >
+                {n < stepNumber ? "✓" : n}
+              </div>
+            ))}
+          </div>
+
+          <p style={{ color: "#64748b", margin: 0, fontSize: 13 }}>
+            Step {stepNumber} of {totalSteps}
+          </p>
+          <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20, color: "#f8fafc", fontFamily: '"Orbitron", sans-serif' }}>
+            {title}
+          </h2>
+
+          {stage === "reasoning" && (
+            <div style={{
+              display: "inline-block",
+              background: "#eab308",
+              color: "#1e293b",
+              fontFamily: '"Space Mono", monospace',
+              fontSize: 12,
+              fontWeight: "bold",
+              padding: "4px 10px",
+              borderRadius: 6,
+              marginBottom: 8,
+              width: "fit-content",
+            }}>
+              NOW: explain your reasoning
+            </div>
+          )}
+
+          <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.5 }}>{task}</p>
+
+          {datasheetRef && (
+            <p style={{ fontSize: 12, marginTop: 4 }}>
+              <a
+                href="https://www.ti.com/lit/ds/symlink/tps54331.pdf"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#60a5fa" }}
+              >
+                Datasheet: Section {datasheetRef.section} — {datasheetRef.title}
+              </a>
+            </p>
+          )}
+
+          <form onSubmit={submitAnswer} style={{ marginTop: "auto" }}>
+            <textarea
+              className="cs-textarea"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              rows={5}
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 11,
-                fontWeight: "bold",
-                border: `2px solid ${n < stepNumber ? "#4ade80" : n === stepNumber ? "#60a5fa" : "#334155"}`,
-                background: n < stepNumber ? "#4ade80" : "transparent",
-                color: n < stepNumber ? "#0a1628" : n === stepNumber ? "#60a5fa" : "#64748b",
+                width: "100%",
+                padding: 10,
+                boxSizing: "border-box",
+                background: "#0f1420",
+                color: "#e2e8f0",
+                border: "1px solid #334155",
+                borderRadius: 6,
+                resize: "vertical",
+                fontFamily: "inherit",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+              }}
+              placeholder="Type your answer..."
+            />
+            <button type="submit" disabled={loading} className="cs-submit" style={{ ...btnStyle, width: "100%", marginTop: 10 }}>
+              {loading ? "Checking..." : "Submit"}
+            </button>
+          </form>
+
+          {feedback && (
+            <div
+              key={feedback}
+              className="cs-feedback"
+              style={{
+                marginTop: 16,
+                padding: 12,
+                fontSize: 13,
+                lineHeight: 1.5,
+                background: hintLevel > 0 ? "#3f2d12" : "#123f22",
+                color: hintLevel > 0 ? "#fcd34d" : "#86efac",
+                borderRadius: 6,
+                border: `1px solid ${hintLevel > 0 ? "#78350f" : "#166534"}`,
               }}
             >
-              {n < stepNumber ? "✓" : n}
+              {feedback}
             </div>
-          ))}
+          )}
         </div>
-
-        <p style={{ color: "#64748b", margin: 0, fontSize: 13 }}>
-          Step {stepNumber} of {totalSteps}
-        </p>
-        <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20, color: "#f8fafc" }}>{title}</h2>
-        <h2 style={{ marginTop: 6, marginBottom: 12, fontSize: 20, color: "#f8fafc" }}>{title}</h2>
-
-{stage === "reasoning" && (
-  <div style={{
-    display: "inline-block",
-    background: "#eab308",
-    color: "#1e293b",
-    fontFamily: '"Space Mono", monospace',
-    fontSize: 12,
-    fontWeight: "bold",
-    padding: "4px 10px",
-    borderRadius: 6,
-    marginBottom: 8,
-  }}>
-    NOW: explain your reasoning
-  </div>
-)}
-
-
-<p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.5 }}>{task}</p>
-        <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.5 }}>{task}</p>
-
-        {datasheetRef && (
-          <p style={{ fontSize: 12, marginTop: 4 }}>
-            <a
-              href="https://www.ti.com/lit/ds/symlink/tps54331.pdf"
-              target="_blank"
-              rel="noreferrer"
-              style={{ color: "#60a5fa" }}
-            >
-              Datasheet: Section {datasheetRef.section} — {datasheetRef.title}
-            </a>
-          </p>
-        )}
-
-        <form onSubmit={submitAnswer} style={{ marginTop: "auto" }}>
-          <textarea
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            rows={5}
-            style={{
-              width: "100%",
-              padding: 10,
-              boxSizing: "border-box",
-              background: "#0f1420",
-              color: "#e2e8f0",
-              border: "1px solid #334155",
-              borderRadius: 6,
-              resize: "vertical",
-              fontFamily: "inherit",
-            }}
-            placeholder="Type your answer..."
-          />
-          <button type="submit" disabled={loading} style={{ ...btnStyle, width: "100%", marginTop: 10 }}>
-            {loading ? "Checking..." : "Submit"}
-          </button>
-        </form>
-
-        {feedback && (
-          <div
-            style={{
-              marginTop: 16,
-              padding: 12,
-              fontSize: 13,
-              lineHeight: 1.5,
-              background: hintLevel > 0 ? "#3f2d12" : "#123f22",
-              color: hintLevel > 0 ? "#fcd34d" : "#86efac",
-              borderRadius: 6,
-            }}
-          >
-            {feedback}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 const btnStyle = {
-  padding: "10px 18px",
-  background: "#60a5fa",
-  color: "#0a1628",
+  padding: "12px 18px",
+  background: "#1d4ed8",
+  color: "#ffffff",
   border: "none",
   borderRadius: 6,
   fontWeight: "bold",
